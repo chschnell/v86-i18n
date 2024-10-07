@@ -1,0 +1,214 @@
+##
+## import_kbd.py
+##
+
+import os, sys, re, json, urllib.request
+
+SCANCODE_TAB = 0x000F
+SCANCODE_ENTER = 0x001C
+SCANCODES_NUMPAD = [
+    0x45, 0xE035, 0x37, 0x4A,   ## NumLock, NumpadDivide, NumpadMultiply, NumpadSubtract
+    0x47, 0x48,   0x49,         ## Numpad7, Numpad8, Numpad9
+    0x4B, 0x4C,   0x4D, 0x4E,   ## Numpad4, Numpad5, Numpad6, NumpadAdd
+    0x4F, 0x50,   0x51,         ## Numpad1, Numpad2, Numpad3
+    0x52, 0x53,   0xE01C ]      ## Numpad0, NumpadDecimal, NumpadEnter
+
+MODIFIER_NONE  = 0x00
+MODIFIER_SHIFT = 0x01
+MODIFIER_CTRL  = 0x02
+MODIFIER_ALT   = 0x04
+
+KLC_MODIFIER = {
+    '0': MODIFIER_NONE,
+    '1': MODIFIER_SHIFT,
+    '2': MODIFIER_CTRL,
+    '3': MODIFIER_SHIFT | MODIFIER_CTRL,
+    '6': MODIFIER_CTRL | MODIFIER_ALT,
+    '7': MODIFIER_SHIFT | MODIFIER_CTRL | MODIFIER_ALT }
+
+def download_klc(klc_tag, klc_filename):
+    os.makedirs(os.path.dirname(klc_filename), exist_ok=True)
+    urllib.request.urlretrieve(f'https://kbdlayout.info/{klc_tag}/download/klc', klc_filename)
+
+def parse_klc(klc_tag, klc_filename):
+    re_trim_end = re.compile('[\t ]*(?://.*)?[\r\n]+$')
+    re_split_fields = re.compile('\t+')
+    key_modifier = [] ## array( int modifier_bitset, ... )
+    keys = {}         ## dict( uint16 codepoint => array( uint16 scancode, int modifier ) )
+    charset = {}      ## dict( uint16 codepoint => array( array( uint16 scancode, int modifier ), ... ) )
+    kbd_id = None
+    kbd_description = None
+    kbd_locale = None
+    has_altgr = False
+    section = None
+    section_started = False
+    section_dead_key = None
+
+    charset[ord('\t')] = [[SCANCODE_TAB, MODIFIER_NONE]]
+    charset[ord('\n')] = [[SCANCODE_ENTER, MODIFIER_NONE]]
+
+    with open(klc_filename, 'r', encoding='utf-16') as f_in:
+        for i_line, line in enumerate(f_in, start=1):
+            line = re_trim_end.sub('', line)
+            if len(line) == 0:
+                if section and section_started:
+                    section = None
+                continue
+            elif line[0] == ';':
+                continue
+            fields = re_split_fields.split(line)
+            if section is None:
+                if fields[0] == 'KBD':
+                    kbd_id = fields[1].strip('"')
+                    kbd_description = fields[2].strip('"')
+                elif fields[0] in ('COPYRIGHT', 'COMPANY', 'LOCALEID', 'VERSION'):
+                    pass
+                elif fields[0] == 'LOCALENAME':
+                    kbd_locale = fields[1].strip('"')
+                elif fields[0] in ('ATTRIBUTES', 'SHIFTSTATE', 'LAYOUT', 'DEADKEY', 'KEYNAME', 'KEYNAME_EXT', 'KEYNAME_DEAD'):
+                    section = fields[0]
+                    section_started = False
+                    if fields[0] == 'DEADKEY':
+                        deadkey_codepoint = int(fields[1], 16)
+                        if deadkey_codepoint not in keys:
+                            raise Exception(f'{klc_filename}:{i_line}: undefined DEADKEY' +
+                                f' codepoint {hex(deadkey_codepoint)} "{chr(deadkey_codepoint)}"')
+                        section_dead_key = keys[deadkey_codepoint]
+                elif fields[0] == 'ENDKBD':
+                    break
+                else:
+                    raise Exception(f'{klc_filename}:{i_line}: unknown KLC identifier {fields[0]}')
+            else:
+                if not section_started:
+                    section_started = True
+                if section == 'ATTRIBUTES':
+                    if fields[0] == 'ALTGR':
+                        has_altgr = True
+                    else:
+                        print(f'{klc_filename}:{i_line}: unknown KLC ATTRIBUTE "{fields[0]}" ignored', file=sys.stderr)
+                elif section == 'SHIFTSTATE':
+                    shiftstate_str = fields[0]
+                    if shiftstate_str not in KLC_MODIFIER:
+                        raise Exception(f'{klc_filename}:{i_line}: unknown KLC SHIFTSTATE {shiftstate_str}')
+                    key_modifier.append(KLC_MODIFIER[shiftstate_str])
+                elif section == 'LAYOUT':
+                    if fields[0] == '-1':
+                        continue
+                    scancode = int(fields[0], 16)
+                    if scancode in SCANCODES_NUMPAD:
+                        continue
+                    for i_codepoint, codepoint_str in enumerate(fields[ 3 : ]):
+                        if codepoint_str == '-1' or codepoint_str == '0000':
+                            continue
+                        deadkey = codepoint_str.endswith('@')
+                        if deadkey:
+                            codepoint_str = codepoint_str[ : -1 ]
+                        if len(codepoint_str) == 1:
+                            codepoint = ord(codepoint_str)
+                        elif len(codepoint_str) == 4:
+                            codepoint = int(codepoint_str, 16)
+                        else:
+                            raise Exception(f'{klc_filename}:{i_line}: unknown codepoint syntax at scancode {hex(scancode)}')
+                        if codepoint < 0x20 and codepoint != ord('\t') and codepoint != ord('\n'):
+                            continue
+                        modifier = key_modifier[i_codepoint]
+                        if codepoint in keys:
+                            prev_key = keys[codepoint]
+                            prev_scancode = prev_key[0]
+                            prev_modifier = prev_key[1]
+                            prev_modifier_count = bin(prev_modifier).count('1')
+                            modifier_count = bin(modifier).count('1')
+                            if not (prev_scancode == scancode or prev_modifier_count < modifier_count or prev_modifier <= modifier):
+                                print(f'{klc_filename}:{i_line}: overriding earlier definition of scancode {hex(prev_scancode)}' +
+                                    f' for codepoint {hex(codepoint)} "{chr(codepoint)}" with scancode {hex(scancode)}' +
+                                    f' (1st:{hex(prev_scancode)}+{prev_modifier} 2nd:{hex(scancode)}+{modifier})',
+                                    file=sys.stderr)
+                                prev_key[0] = scancode
+                                prev_key[1] = modifier
+                            continue
+                        key = [scancode, modifier]
+                        keys[codepoint] = key
+                        if not deadkey:
+                            charset[codepoint] = [key]
+                elif section == 'DEADKEY':
+                    codepoint = int(fields[1], 16)
+                    if codepoint not in charset:
+                        end_dead_codepoint = int(fields[0], 16)
+                        if end_dead_codepoint not in keys:
+                            raise Exception(f'{klc_filename}:{i_line}: undefined terminal codepoint' +
+                                f' {hex(end_dead_codepoint)} "{chr(end_dead_codepoint)}"')
+                        charset[codepoint] = [section_dead_key, keys[end_dead_codepoint]]
+
+    if kbd_id is None:
+        raise Exception(f'{klc_filename}: missing KBD definition')
+    elif kbd_locale is None:
+        raise Exception(f'{klc_filename}: missing LOCALENAME definition')
+    return {
+        'id': klc_tag,
+        'description': kbd_description,
+        'locale': kbd_locale,
+        'has_altgr': has_altgr,
+        'charset': dict(sorted(charset.items())) }
+
+def trim_charsets(keyboards):
+    charset_us = None
+    for keyboard in keyboards:
+        if keyboard['id'] == 'kbdus':
+            charset_us = keyboard['charset']
+            break
+    for keyboard_intl in keyboards:
+        if keyboard_intl['id'] == 'kbdus':
+            continue
+        charset_missing = []
+        charset_intl = keyboard_intl['charset']
+        for codepoint_us, keys_us in charset_us.items():
+            if codepoint_us not in charset_intl:
+                charset_missing.append(codepoint_us)
+                print(f'{keyboard_intl["id"]}: missing codepoint {codepoint_us} "{chr(codepoint_us)}"', file=sys.stderr)
+            elif charset_intl[codepoint_us] == keys_us:
+                del charset_intl[codepoint_us]
+        if charset_missing:
+            keyboard_intl['charset_missing'] = charset_missing
+
+def main():
+    klc_tags = [
+        'kbdus',    ## United States
+        'kbdusx',   ## United States-International
+        'kbdbe',    ## Belgian French
+        'kbdca',    ## Canadian French
+        'kbdda',    ## Danish
+        'kbdne',    ## Dutch
+        'kbdfr',    ## French
+        'kbdgr',    ## German
+        'kbdit',    ## Italian
+        'kbdla',    ## Latin American
+        'kbdno',    ## Norwegian
+        'kbdpo',    ## Portugese
+        'kbdsp',    ## Spanish
+        'kbdsw',    ## Swedish
+        'kbdsg',    ## Swiss German
+        'kbduk' ]   ## United Kingdom
+
+    keyboards = []
+    for klc_tag in klc_tags:
+        klc_filename = f'klc/{klc_tag}.klc'
+        if not os.path.exists(klc_filename):
+            print(f'downloading {klc_filename}', file=sys.stderr)
+            download_klc(klc_tag, klc_filename)
+        keyboards.append(parse_klc(klc_tag, klc_filename))
+
+    trim_charsets(keyboards)
+
+    print('/*')
+    print(f' * NOTE: This file was auto-generated by {os.path.basename(__file__)}!')
+    print(' */\n')
+
+    print('export const KEYBOARD_TABLES = {')
+    for i_keyboard, keyboard in enumerate(keyboards):
+        if i_keyboard > 0:
+            print()
+        print(f'    "{keyboard["id"]}": {json.dumps(keyboard)},')
+    print('};')
+
+if __name__ == '__main__':
+    main()

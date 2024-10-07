@@ -1,2 +1,2 @@
 # v86-i18n
-Supplemental internationalization code for V86
+Supplementary JavaScript modules for internationalization support in V86.

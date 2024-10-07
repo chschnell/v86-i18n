@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Foreign Keyboard Map</title>
+<meta name="viewport" content="width=device-width,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta charset="UTF-8">
+<script rel="prefetch" src="../demo/include/keyboard_charsets.js"></script>
+<script rel="prefetch" src="../demo/include/keyboard_lib.js"></script>
+<style type="text/css">
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+body {
+    background-color: white;
+    font-family: Arial;
+}
+select, button {
+    font-size: 16px;
+}
+a {
+    text-decoration: none;
+}
+textarea {
+    font-family: Consolas;
+    display: block;
+    width: 100%;
+    height: 15em;
+    resize: vertical;
+    outline: none;
+}
+table {
+    font-family: Consolas;
+}
+table th {
+    text-align: left;
+    padding-right: 0.5em;
+    border-bottom: solid 1px #ccc;
+}
+span.key,
+span.modkey {
+    color: rgb(12, 13, 14);
+    border: solid 0.75px rgb(186, 191, 197);
+    border-radius: 4px;
+    display: inline-block;
+    margin: 0 1.1px;
+    padding: 1.1px 6.6px;
+}
+span.key {
+    margin-right: 0.5em;
+}
+span.modkey {
+    background-color: rgb(237, 240, 242);
+}
+
+div.layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+        "header header"
+        "charset transform";
+    justify-items: center;
+    width: 100%;
+    height: 100vh;
+}
+div.header {
+    grid-area: header;
+    width: 100%;
+    padding: 4px;
+    border-bottom: solid 1px black;
+}
+div.charset {
+    grid-area: charset;
+    white-space: nowrap;
+    overflow-y: scroll;
+}
+div.transform {
+    grid-area: transform;
+    width: 100%;
+    padding: 8px;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+<div class="header">
+<label for="select-keyboard">Keyboard:</label> <select id="select-keyboard"></select>
+<span id="keyboard-attr"></span>
+</div>
+
+<div class="charset">
+<table id="keyboard-charset"></table>
+</div>
+
+<div class="transform">
+<p>Unicode text:</p>
+<textarea id="unicode-input"></textarea>
+<button id="fill-keyboard-charset">Fill with keyboard charset</button>
+<button id="enter-evcode-sequence">Enter KeyboardEvent.code sequence</button>
+<br><br>
+<p>Scancode sequence:</p>
+<textarea id="scancode-output" readonly></textarea>
+<button id="copy-scancodes" disabled>Copy to clipboard</button>
+</div>
+</div>
+
+<script>
+"use strict";
+
+/*
+SEE ALSO
+
+- KeyboardEvent code Values: Standard "102" Keyboard Layout
+  https://www.w3.org/TR/uievents-code/#keyboard-102
+- German Layout Scancodes
+  https://kbdlayout.info/KBDGR/scancodes
+- Encoding API Encodings
+  https://developer.mozilla.org/en-US/docs/Web/API/Encoding_API/Encodings
+- Computer-Engineering.org (Adam Chapweske)
+  https://web.archive.org/web/20180302004814/https://computer-engineering.org/
+*/
+
+function hex(value, word_size=0)
+{
+    if (word_size > 0) {
+        return value.toString(16).toUpperCase().padStart(word_size * 2, '0');
+    }
+    else {
+        return value.toString(16).toUpperCase();
+    }
+}
+
+function format_modifier(modifier)
+{
+    const result = [];
+    const add_modifier = function(modifier_bit, scancode, text) {
+        if (modifier & modifier_bit) {
+            result.push(`<span class="modkey" ` +
+                `title='Scancode: 0x${hex(scancode)}\nEvent code: "${VirtualKeyboard.SCANCODE_TO_EVCODE[scancode]}"'>${text}</span>`);
+        }
+    };
+    add_modifier(VirtualKeyboard.MODIFIER_SHIFT, VirtualKeyboard.SCANCODE_SHIFT, 'Shift');
+    add_modifier(VirtualKeyboard.MODIFIER_CTRL, VirtualKeyboard.SCANCODE_CTRL, 'Ctrl');
+    add_modifier(VirtualKeyboard.MODIFIER_ALT, VirtualKeyboard.SCANCODE_ALT, 'Alt');
+    add_modifier(VirtualKeyboard.MODIFIER_ALTGR, VirtualKeyboard.SCANCODE_ALTGR, 'AltGr');
+    return result;
+}
+
+function set_keyboard(kbd_id)
+{
+    const keyboard = new VirtualKeyboard(kbd_id);
+
+    let html = ['<thead><tr> <th>Codepoint</th> <th>Glyph</th> <th>Scancode(s)</th> </tr></thead>'];
+    html.push('<tbody>');
+    for (const [codepoint_str, keylist] of Object.entries(keyboard.charset)) {
+        const codepoint = parseInt(codepoint_str);
+        let keys = '';
+        for (const key of keylist) {
+            const scancode = key[0];
+            const modifier = key[1];
+            if (modifier !== 0) {
+                keys += format_modifier(modifier).join('+') + '+';
+            }
+            keys += `<span class="key" title='Event code: "${VirtualKeyboard.SCANCODE_TO_EVCODE[scancode]}"'>0x${hex(scancode, 1)}</span> `;
+        }
+        html.push(`<tr> <td>U+${hex(codepoint, 2)}</td> <td>${String.fromCodePoint(codepoint)}</td> <td>${keys}</td> </tr>`);
+    }
+    html.push('</tbody>');
+    document.querySelector('#keyboard-charset').innerHTML = html.join('\n');
+
+    const charset_size = Object.keys(keyboard.charset).length;
+    const kbdlayout_url = `https://kbdlayout.info/${kbd_id}`;
+    document.querySelector('#keyboard-attr').innerHTML =
+        `Charset size: <b>${charset_size} distinct codepoints</b> | ` +
+        `Locale: <b>${keyboard.locale}</b> | <b><a href="${kbdlayout_url}/overview+scancodes">Layout</a></b> | ` +
+        `<b><a href="${kbdlayout_url}/download/klc">${kbd_id}.klc</a></b>`;
+
+    document.keyboard = keyboard;
+}
+
+function on_keyboard_change(ev)
+{
+    set_keyboard(ev.target.value);
+    on_transform_text(ev);
+}
+
+function on_fill_keyboard_charset(ev)
+{
+    let text = '', i_codepoint = 1;
+    for (const [codepoint_str, keylist] of Object.entries(document.keyboard.charset)) {
+        const codepoint = Math.max(parseInt(codepoint_str), 0x20);
+        text += String.fromCodePoint(codepoint) + ((i_codepoint++ % 16 === 0) ? '\n' : ' ');
+    }
+    document.querySelector('#unicode-input').value = text + '\n';
+    on_transform_text(ev);
+}
+
+function on_copy_to_clipboard(ev)
+{
+    navigator.clipboard.writeText(document.querySelector('#scancode-output').value);
+}
+
+function set_scancodes_text(scancodes)
+{
+    let n_bytes = 0;
+    let hex_scancodes = [];
+    for (const scancode of scancodes) {
+        hex_scancodes.push(hex(scancode, 1));
+        n_bytes += (scancode > 0xff)? 2 : 1;
+    }
+    document.querySelector('#scancode-output').value = hex_scancodes.join(' ');
+    const copy_scancodes = document.querySelector('#copy-scancodes');
+    copy_scancodes.textContent = `Copy ${n_bytes} scancode bytes to clipboard`;
+    copy_scancodes.disabled = n_bytes === 0;
+}
+
+function on_enter_evcode_sequence(ev)
+{
+    const ev_codes_str = prompt('Enter space-separated list of KeyboardEvent.code strings');
+    if(ev_codes_str)
+    {
+        const ev_codes = ev_codes_str.split(' ')
+        set_scancodes_text(VirtualKeyboard.ev_codes_to_scancodes(ev_codes))
+    }
+}
+
+function on_transform_text(ev)
+{
+    const text = document.querySelector('#unicode-input').value;
+    set_scancodes_text(document.keyboard.text_to_scancodes(text));
+}
+
+function on_window_load(ev)
+{
+    const url_params = new URLSearchParams(window.location.search);
+    const initial_keyboard_id = url_params.get('k');
+    const keyboard_ids = VirtualKeyboard.get_available_keyboards();
+    let keyboard_id, keyboard_index;
+    if (initial_keyboard_id !== null && keyboard_ids.hasOwnProperty(initial_keyboard_id)) {
+        keyboard_id = initial_keyboard_id;
+        keyboard_index = Object.keys(keyboard_ids).indexOf(initial_keyboard_id);
+    }
+    else {
+        keyboard_id = Object.keys(keyboard_ids)[0];
+        keyboard_index = 0;
+    }
+    set_keyboard(keyboard_id);
+
+    const select_keyboard = document.querySelector('#select-keyboard');
+    const options = [];
+    for (const [keyboard_id, keyboard_description] of Object.entries(keyboard_ids)) {
+        options.push(`<option value="${keyboard_id}">${keyboard_description}</option>`);
+    }
+    select_keyboard.innerHTML = options.join('\n');
+    select_keyboard.selectedIndex = keyboard_index;
+    select_keyboard.addEventListener('change', on_keyboard_change);
+
+    const unicode_input = document.querySelector('#unicode-input');
+    unicode_input.addEventListener('change', on_transform_text);
+    unicode_input.addEventListener('keyup', on_transform_text);
+
+    document.querySelector('#fill-keyboard-charset').addEventListener('click', on_fill_keyboard_charset);
+    document.querySelector('#enter-evcode-sequence').addEventListener('click', on_enter_evcode_sequence);
+    document.querySelector('#copy-scancodes').addEventListener('click', on_copy_to_clipboard);
+}
+
+window.addEventListener('load', on_window_load);
+
+</script>
+</body>
+</html>
