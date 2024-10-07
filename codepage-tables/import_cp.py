@@ -3,24 +3,22 @@
 ##
 ## import_cp.py
 ##
-## Download raw files from www.unicode.org in this directory using:
-##
-##   wget --mirror --no-parent --reject "index.html*" https://www.unicode.org/Public/MAPPINGS/
-##
 
-import os, sys, json
+import os, sys, json, urllib, urllib.parse, urllib.request
 
-VENDORS_DIR = 'www.unicode.org/Public/MAPPINGS/VENDORS'
-
-def read_codepage_def(cp_filename, cp437_fallback=None):
+def read_codepage_def(cp_filename, cp437=None):
+    ## if cp437 is None then we are currently reading CP437
     codepoints_defined = 0
     result = [0] * 256
     with open(cp_filename) as f_in:
         for line_no, line_in in enumerate(f_in):
             line_in = line_in.strip()
+            ## skip comments, empty lines and control characters
             if len(line_in) == 0 or line_in[0] == '#' or ord(line_in[0]) == 0x1a:
                 ## 0x1a: ASCII ctrl char "SUB" (CTRL+Z), an end-of-file marker
                 continue
+            ## expected format of line:
+            ##     "0x" <hex-char> "\t" "0x" <hex-codepoint> "\t" "#" <comment>
             line = line_in.split('\t')
             if len(line) != 3:
                 raise Exception(f'{cp_filename}:{line_no}: unexpected line format: {line_in} {ord(line_in[0])}!')
@@ -28,9 +26,9 @@ def read_codepage_def(cp_filename, cp437_fallback=None):
             if cp_char > 255:
                 raise Exception(f'{cp_filename}:{line_no}: invalid character code {cp_char}!')
             codepoint = line[1].strip()
-            if codepoint == '':
-                ## map undefined codepoints to CP437, or (should not happen): replacement character U+FFFD
-                codepoint = cp437_fallback[cp_char] if cp437_fallback else 0xfffd
+            if not len(codepoint):
+                ## fall back to CP437 for undefined codepoints, or (should not happen): use replacement character U+FFFD
+                codepoint = cp437[cp_char] if cp437 else 0xfffd
             else:
                 codepoint = int(codepoint, 16)
                 if codepoint > 0xffff:
@@ -39,88 +37,94 @@ def read_codepage_def(cp_filename, cp437_fallback=None):
             codepoints_defined += 1
     if codepoints_defined != 256:
         raise Exception(f'{cp_filename}: unexpected number of codepoint defintions {codepoints_defined}!')
-    return result[ 128 : ] if cp437_fallback else result
+    return result[ 128 : ] if cp437 else result
 
 def main():
-    cp437_file = f'{VENDORS_DIR}/MICSFT/PC/CP437.TXT'
-    cp437 = read_codepage_def(cp437_file)
+    ## source_urls: dict(str cp_id => str cp_url)
+    source_urls = 'source_urls.json'
+    if len(sys.argv) > 2 and sys.argv[1] == '-f':
+        source_urls = sys.argv[2]
 
-    ibmgraph_file = f'{VENDORS_DIR}/MISC/IBMGRAPH.TXT'
-    with open(ibmgraph_file) as f_in:
-        for line_no, line_in in enumerate(f_in):
-            if line_in[0] == '#':
-                continue
-            line = line_in.rstrip().split('\t')
-            if len(line) != 5:
-                raise Exception(f'{ibmgraph_file}:{line_no}: unexpected line format: {line_in}!')
-            codepoint = int(line[0], 16)
-            cp_char = int(line[1], 16)
-            if cp_char > 0x7F:
-                ## Skipped from IBMGRAPH.TXT:
-                ##   0xB9: 0x2563
-                ##   0xBA: 0x2551
-                ##   0xBB: 0x2557
-                ##   0xBC: 0x255D
-                ##   0xC8: 0x255A
-                ##   0xC9: 0x2554
-                ##   0xCA: 0x2569
-                ##   0xCB: 0x2566
-                ##   0xCC: 0x2560
-                ##   0xCD: 0x2550
-                ##   0xCE: 0x256C
-                continue
-            cp437[cp_char] = codepoint
+    ## cp_files: dict(str cp_id => str cp_filepath)
+    cp437_filepath = None
+    ibmgraph_filepath = None
+    cp_files = {}
+    with open(source_urls) as source_urls:
+        for cp_id, [source_url, description] in json.load(source_urls).items():
+            url = urllib.parse.urlparse(source_url)
+            cp_filepath = f'{url.netloc}{url.path}'
+            if not os.path.exists(cp_filepath):
+                print(f'downloading {cp_filepath}', file=sys.stderr)
+                os.makedirs(os.path.dirname(cp_filepath), exist_ok=True)
+                urllib.request.urlretrieve(source_url, cp_filepath)
+            if cp_id == 'CP437':
+                if cp437_filepath:
+                    raise Exception(f'{source_urls}: {cp_id} must not be defined more than once')
+                cp437_filepath = cp_filepath
+            elif cp_id == 'IBMGRAPH':
+                if ibmgraph_filepath:
+                    raise Exception(f'{source_urls}: {cp_id} must not be defined more than once')
+                ibmgraph_filepath = cp_filepath
+            else:
+                cp_files[cp_id] = cp_filepath
 
-    ## CP932, CP936, CP949 and CP950 don't contain any useful mappings but Unicode codepoints
-    skip_codepages = ['CP437', 'CP932', 'CP936', 'CP949', 'CP950']
-    ## codepages: dict(str cp_name => array codepage[128 or 256 * Uint8])
-    codepages = {'CP437': cp437}
+    ## parse codepage CP437 first
+    if not cp437_filepath:
+        raise Exception(f'{source_urls}: missing required codepage CP437.TXT')
+    cp437 = read_codepage_def(cp437_filepath)
 
-    for path in [f'{VENDORS_DIR}/MICSFT/PC', f'{VENDORS_DIR}/MICSFT/WINDOWS']:
-        for dirpath, dirnames, filenames in os.walk(path):
-            for filename in filenames:
-                filename = filename.upper()
-                cp_name = filename[ : -4 ]
-                if not filename.endswith('.TXT') or cp_name in skip_codepages:
+    ## replace control characters in CP437 with printable characters defined in IBMGRAPH (optional)
+    if ibmgraph_filepath:
+        with open(ibmgraph_filepath) as f_in:
+            for line_no, line_in in enumerate(f_in):
+                if line_in[0] == '#':
                     continue
-                codepage = read_codepage_def(f'{dirpath}/{filename}', cp437)
-                codepages[cp_name] = codepage
-                if cp_name == 'CP850':
-                    ## CP858 is derived from CP850 and differs only at 0xD5:
-                    ## former "dotless i" U+0131 is replaced by "euro symbol" U+20AC
-                    cp858 = codepage.copy()
-                    cp858[0xD5 - 128] = 0x20AC
-                    codepages['CP858'] = cp858
+                line = line_in.rstrip().split('\t')
+                if len(line) != 5:
+                    raise Exception(f'{ibmgraph_filepath}:{line_no}: unexpected line format: {line_in}!')
+                codepoint = int(line[0], 16)
+                cp_char = int(line[1], 16)
+                if cp_char > 0x7F:
+                    ## Skipped from IBMGRAPH.TXT:
+                    ##   0xB9: 0x2563
+                    ##   0xBA: 0x2551
+                    ##   0xBB: 0x2557
+                    ##   0xBC: 0x255D
+                    ##   0xC8: 0x255A
+                    ##   0xC9: 0x2554
+                    ##   0xCA: 0x2569
+                    ##   0xCB: 0x2566
+                    ##   0xCC: 0x2560
+                    ##   0xCD: 0x2550
+                    ##   0xCE: 0x256C
+                    continue
+                cp437[cp_char] = codepoint
 
+    ## codepages: dict(str cp_id => array codepage[128 or 256 * Uint8])
+    codepages = {'CP437': cp437}
+    for cp_id, cp_filepath in cp_files.items():
+        codepage = read_codepage_def(cp_filepath, cp437)
+        codepages[cp_id] = codepage
+        if cp_id == 'CP850':
+            ## CP858 is derived from CP850 and differs only at 0xD5:
+            ## former "dotless i" U+0131 is replaced by "euro symbol" U+20AC
+            #        cp858: "ISO 8859-1",
+            cp858 = codepage.copy()
+            cp858[0xD5 - 128] = 0x20AC
+            codepages['CP858'] = cp858
+
+    ## sorted_cp_ids: array(str cp_id)
     sorted_cp_ids = sorted(codepages.keys(), key=lambda k: int(k[2:]))
 
     print('/*')
-    print(f'NOTE: This file was auto-generated by {os.path.basename(__file__)}!\n')
-    print('Exports mapping tables from 8-bit Code Page character codes to their')
-    print('respective UTF-8 strings. Supported Code Pages:\n')
-    line_len = 0
-    for cp_name in sorted_cp_ids:
-        cp_name_len = len(cp_name)
-        if line_len + cp_name_len + 2 < 70:
-            if line_len == 0:
-                print(f'    {cp_name}', end='')
-                line_len = 4 + cp_name_len
-            else:
-                print(f', {cp_name}', end='')
-                line_len += 2 + cp_name_len
-        else:
-            print(f',\n    {cp_name}', end='')
-            line_len = 4 + cp_name_len
-    print('\n\nSOURCE\n')
-    print('    http://www.unicode.org/Public/MAPPINGS/')
-    print('*/\n')
-
+    print(f' * NOTE: This file was auto-generated by {os.path.basename(__file__)}.')
+    print(' */\n')
     last_i_cp = len(sorted_cp_ids) - 1
     print('export const CODEPAGE_TABLES = {')
-    for i_cp, cp_name in enumerate(sorted_cp_ids):
-        codepoints_str = ''.join([chr(codepoint) for codepoint in codepages[cp_name]])
+    for i_cp, cp_id in enumerate(sorted_cp_ids):
+        codepoints_str = ''.join([chr(codepoint) for codepoint in codepages[cp_id]])
         codepoints_json = json.dumps(codepoints_str, ensure_ascii=False)
-        print(f'    {cp_name.lower()}: {codepoints_json}', end='\n' if i_cp == last_i_cp else ',\n')
+        print(f'    {cp_id.lower()}: {codepoints_json}', end='\n' if i_cp == last_i_cp else ',\n')
     print('};')
 
 if __name__ == '__main__':
