@@ -4,7 +4,7 @@ Converts keyboard layout data from KLC files into JavaScript code that can be im
 
 A KLC file is the Unicode-encoded output of Microsoft's Keyboard Layout Creator (MSKLC).
 
-When first started, `import_kbd.py` downloads a set of KLC files from https://kbdlayout.info/ into the subdirectory `./klc`.
+When first started, `import_kbd.py` downloads a set of KLC files defined in `source_urls.json` into subdirectory `./download`.
 
 ## SEE ALSO
 

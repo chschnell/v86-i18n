@@ -26,13 +26,12 @@ KLC_MODIFIER = {
     '6': MODIFIER_CTRL | MODIFIER_ALT,
     '7': MODIFIER_SHIFT | MODIFIER_CTRL | MODIFIER_ALT }
 
-def parse_klc(klc_tag, klc_filename):
+def parse_klc(kbd_id, klc_filename):
     re_trim_end = re.compile('[\t ]*(?://.*)?[\r\n]+$')
     re_split_fields = re.compile('\t+')
     key_modifier = [] ## array( int modifier_bitset, ... )
     keys = {}         ## dict( uint16 codepoint => array( uint16 scancode, int modifier ) )
     charset = {}      ## dict( uint16 codepoint => array( array( uint16 scancode, int modifier ), ... ) )
-    kbd_id = None
     kbd_description = None
     kbd_locale = None
     has_altgr = False
@@ -55,7 +54,6 @@ def parse_klc(klc_tag, klc_filename):
             fields = re_split_fields.split(line)
             if section is None:
                 if fields[0] == 'KBD':
-                    kbd_id = fields[1].strip('"')
                     kbd_description = fields[2].strip('"')
                 elif fields[0] in ('COPYRIGHT', 'COMPANY', 'LOCALEID', 'VERSION'):
                     pass
@@ -135,12 +133,12 @@ def parse_klc(klc_tag, klc_filename):
                                 f' {hex(end_dead_codepoint)} "{chr(end_dead_codepoint)}"')
                         charset[codepoint] = [section_dead_key, keys[end_dead_codepoint]]
 
-    if kbd_id is None:
+    if kbd_description is None:
         raise Exception(f'{klc_filename}: missing KBD definition')
     elif kbd_locale is None:
         raise Exception(f'{klc_filename}: missing LOCALENAME definition')
     return {
-        'id': klc_tag,
+        'kbd_id': kbd_id,
         'description': kbd_description,
         'locale': kbd_locale,
         'has_altgr': has_altgr,
@@ -149,18 +147,18 @@ def parse_klc(klc_tag, klc_filename):
 def trim_keyboard_charsets(keyboards):
     charset_us = None
     for keyboard in keyboards:
-        if keyboard['id'] == 'kbdus':
+        if keyboard['kbd_id'] == 'kbdus':
             charset_us = keyboard['charset']
             break
     for keyboard_intl in keyboards:
-        if keyboard_intl['id'] == 'kbdus':
+        if keyboard_intl['kbd_id'] == 'kbdus':
             continue
         charset_missing = []
         charset_intl = keyboard_intl['charset']
         for codepoint_us, keys_us in charset_us.items():
             if codepoint_us not in charset_intl:
                 charset_missing.append(codepoint_us)
-                print(f'{keyboard_intl["id"]}: missing codepoint {codepoint_us} "{chr(codepoint_us)}"', file=sys.stderr)
+                print(f'{keyboard_intl["kbd_id"]}: missing codepoint {codepoint_us} "{chr(codepoint_us)}"', file=sys.stderr)
             elif charset_intl[codepoint_us] == keys_us:
                 del charset_intl[codepoint_us]
         if charset_missing:
@@ -172,12 +170,13 @@ def main():
         source_urls = sys.argv[2]
 
     keyboards = []
-    os.makedirs('klc', exist_ok=True)
+
+    os.makedirs('download', exist_ok=True)
     with open(source_urls) as source_urls:
         for kbd_id, source_url in json.load(source_urls).items():
-            klc_filename = f'klc/{kbd_id}.klc'
+            klc_filename = f'download/{kbd_id}.klc'
             if not os.path.exists(klc_filename):
-                print(f'downloading keyboard definition {kbd_id} from {source_url}', file=sys.stderr)
+                print(f'downloading keyboard definition "{kbd_id}" from {source_url}', file=sys.stderr)
                 urllib.request.urlretrieve(source_url, klc_filename)
             keyboards.append(parse_klc(kbd_id, klc_filename))
 
@@ -190,7 +189,7 @@ def main():
     for i_keyboard, keyboard in enumerate(keyboards):
         if i_keyboard > 0:
             print(',\n')
-        print(f'    {keyboard["id"]}: {{'
+        print(f'    {keyboard["kbd_id"]}: {{'
             f'description: {json.dumps(keyboard["description"])}, '
             f'locale: {json.dumps(keyboard["locale"])}, '
             f'has_altgr: {json.dumps(keyboard["has_altgr"])}, '

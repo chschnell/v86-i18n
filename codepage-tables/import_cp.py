@@ -41,16 +41,17 @@ def main():
         source_urls = sys.argv[2]
 
     ## cp_files: dict(str cp_id => [str cp_filepath, str description])
+    cp_files = {}
     cp437_filepath = None
     ibmgraph_filepath = None
-    cp_files = {}
+
+    os.makedirs('download', exist_ok=True)
     with open(source_urls) as source_urls:
         for cp_id, [source_url, description] in json.load(source_urls).items():
             url = urllib.parse.urlparse(source_url)
-            cp_filepath = f'{url.netloc}{url.path}'
+            cp_filepath = f'download/{cp_id}.txt'
             if not os.path.exists(cp_filepath):
-                print(f'downloading codepage definition {cp_id} from {cp_filepath}', file=sys.stderr)
-                os.makedirs(os.path.dirname(cp_filepath), exist_ok=True)
+                print(f'downloading codepage definition "{cp_id}" from {source_url}', file=sys.stderr)
                 urllib.request.urlretrieve(source_url, cp_filepath)
             if cp_id == 'cp437':
                 if cp437_filepath:
