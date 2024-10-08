@@ -52,11 +52,11 @@ def main():
                 print(f'downloading codepage definition {cp_id} from {cp_filepath}', file=sys.stderr)
                 os.makedirs(os.path.dirname(cp_filepath), exist_ok=True)
                 urllib.request.urlretrieve(source_url, cp_filepath)
-            if cp_id == 'CP437':
+            if cp_id == 'cp437':
                 if cp437_filepath:
                     raise Exception(f'{source_urls}: {cp_id} must not be defined more than once')
                 cp437_filepath = [cp_filepath, description]
-            elif cp_id == 'IBMGRAPH':
+            elif cp_id == 'ibmgraph':
                 if ibmgraph_filepath:
                     raise Exception(f'{source_urls}: {cp_id} must not be defined more than once')
                 ibmgraph_filepath = cp_filepath
@@ -96,16 +96,16 @@ def main():
                 cp437[cp_char] = codepoint
 
     ## codepages: dict(str cp_id => array codepage[128 or 256 * Uint8])
-    codepages = {'CP437': [cp437, cp437_filepath[1]]}
+    codepages = {'cp437': [cp437, cp437_filepath[1]]}
     for cp_id, [cp_filepath, description] in cp_files.items():
         codepage = read_codepage_def(cp_filepath, cp437)
         codepages[cp_id] = [codepage, description]
-        if cp_id == 'CP850':
+        if cp_id == 'cp850':
             ## CP858 is derived from CP850 and differs only at 0xD5:
             ## former "dotless i" U+0131 is replaced by "euro symbol" U+20AC
             cp858 = codepage.copy()
             cp858[0xD5 - 128] = 0x20AC
-            codepages['CP858'] = [cp858, 'ISO 8859-1']
+            codepages['cp858'] = [cp858, 'ISO 8859-1']
 
     ## sorted_cp_ids: array(str cp_id)
     sorted_cp_ids = sorted(codepages.keys(), key=lambda k: int(k[2:]))
@@ -119,7 +119,7 @@ def main():
         codepage = codepages[cp_id]
         codepoints_str = ''.join([chr(codepoint) for codepoint in codepage[0]])
         codepoints_json = json.dumps(codepoints_str, ensure_ascii=False)
-        print(f'    {cp_id.lower()}: {{description: {json.dumps(codepage[1])}, charmap: {codepoints_json}}}',
+        print(f'    {cp_id}: {{description: {json.dumps(codepage[1])}, charmap: {codepoints_json}}}',
             end='\n' if i_cp == last_i_cp else ',\n')
     print('};')
 

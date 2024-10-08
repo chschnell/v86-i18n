@@ -173,7 +173,6 @@ def main():
     os.makedirs('klc', exist_ok=True)
     with open(source_urls) as source_urls:
         for kbd_id, source_url in json.load(source_urls).items():
-            kbd_id = kbd_id.lower()
             klc_filename = f'klc/{kbd_id}.klc'
             if not os.path.exists(klc_filename):
                 print(f'downloading keyboard definition {kbd_id} from {source_url}', file=sys.stderr)
