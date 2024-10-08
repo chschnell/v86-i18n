@@ -6,6 +6,7 @@ import { CODEPAGE_TABLES } from './codepage_tables.js';
 
 export class Codepage
 {
+    // TODO: remove
     static CP_DESCRIPTION = {
         cp437: 'DOS Latin US',
         cp737: 'DOS Greek',

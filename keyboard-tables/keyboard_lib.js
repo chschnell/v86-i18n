@@ -212,9 +212,9 @@ export class VirtualKeyboard
     static get_available_keyboards()
     {
         const result = {};
-        for(const keyboard of Object.values(KEYBOARD_TABLES))
+        for(const [kbd_id, keyboard] of Object.entries(KEYBOARD_TABLES))
         {
-            result[keyboard.id] = keyboard.description;
+            result[kbd_id] = keyboard.description;
         }
         return result;
     }
