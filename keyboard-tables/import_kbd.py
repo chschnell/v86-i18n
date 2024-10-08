@@ -165,7 +165,8 @@ def trim_keyboard_charsets(keyboards):
             keyboard_intl['charset_missing'] = charset_missing
 
 def main():
-    parser = argparse.ArgumentParser(prog='import_cp', description='Generates Unicode to keyboard scancode mappings.')
+    parser = argparse.ArgumentParser(prog='import_kbd',
+        description='Generates Unicode to keyboard scancode mappings.')
     parser.add_argument('-i', metavar='FILE', dest='in_filename',
         default='source_urls.json', help='input file name, default: source_urls.json')
     parser.add_argument('-o', metavar='FILE', dest='out_filename',
