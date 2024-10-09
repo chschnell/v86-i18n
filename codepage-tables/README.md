@@ -35,8 +35,8 @@ for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codep
     // ...
 }
 
-// instantiate Codepage object for cp_id "cp437" (DOS Latin US)
-const codepage = new Codepage("cp437");
+// instantiate Codepage object for cp_id "cp858" (ISO 8859-1)
+const codepage = new Codepage("cp858");
 
 // use codepage in V86
 const emulator = new V86({ ... });
