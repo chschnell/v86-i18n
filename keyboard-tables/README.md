@@ -32,6 +32,7 @@ Example usage:
 
 ```HTML
 <script type="module">
+
 // import class Keyboard from module keyboard_lib.js (which imports keyboard_tables.js)
 import { Keyboard } from "./keyboard_lib.js";
 
@@ -64,6 +65,7 @@ async paste_ctrl_alt_del()
     const scancodes = Keyboard.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
     await Keyboard.paste_scancodes(emulator, scancodes);
 }
+
 </script>
 ```
 

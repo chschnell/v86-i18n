@@ -26,6 +26,7 @@ Example usage:
 
 ```HTML
 <script type="module">
+
 // import class Codepage from module codepage_lib.js (which imports codepage_tables.js)
 import { Codepage } from "./codepage_lib.js";
 
@@ -41,5 +42,6 @@ const codepage = new Codepage("cp858");
 // use codepage in V86
 const emulator = new V86({ ... });
 emulator.v86.cpu.devices.vga.screen.set_charmap(codepage.charmap);
+
 </script>
 ```
