@@ -181,7 +181,7 @@ export class VirtualKeyboard
 
         const switch_modifier = function(modifier_bit, modifier_scancode)
         {
-            if(old_modifier & modifier_bit ^ new_modifier & modifier_bit)
+            if((old_modifier ^ new_modifier) & modifier_bit)
             {
                 if(new_modifier & modifier_bit)
                 {
