@@ -1,10 +1,10 @@
 # Codepage module
 
-Provides 8-Bit codepage-to-Unicode mappings as JavaScript code that can be imported as a module.
+JavaScript module that provides 8-Bit PC codepage to Unicode mappings.
 
 ## Generating codepage_tables.js
 
-Python script [import_cp.py](import_cp.py) generates [codepage_tables.js](codepage_tables.js) from a set of codepage mapping files defined in [source_urls.json](source_urls.json).
+Python script **[import_cp.py](import_cp.py)** generates [codepage_tables.js](codepage_tables.js) from a set of automatically downloaded codepage mapping files defined in [source_urls.json](source_urls.json).
 
 ### Usage
 
@@ -20,4 +20,26 @@ Python script [import_cp.py](import_cp.py) generates [codepage_tables.js](codepa
 
 ## Using codepage_tables.js
 
-See class `Codepage` in [codepage_lib.js](codepage_lib.js) for usage examples.
+Copy Javascript modules **[codepage_tables.js](codepage_tables.js)** and **[codepage_lib.js](codepage_lib.js)** into your project, then use class `Codepage` from module [codepage_lib.js](codepage_lib.js) to access the codepage mappings.
+
+Example usage:
+
+```HTML
+<script type="module">
+// import module codepage_lib.js (it imports codepage_tables.js)
+import { Codepage } from './codepage_lib.js';
+
+// retrieve available codepage mappings
+for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codepages()))
+{
+    // ...
+}
+
+// instantiate Codepage object for us-EN codepage `cp437`
+const codepage = new Codepage('cp437');
+
+// use codepage in V86
+const emulator = new V86({ ... });
+emulator.v86.cpu.devices.vga.screen.set_charmap(codepage.charmap);
+</script>
+```
