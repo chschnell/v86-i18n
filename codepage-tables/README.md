@@ -6,7 +6,7 @@ Provides 8-Bit codepage-to-Unicode mappings as JavaScript code that can be impor
 
 Python script [import_cp.py](import_cp.py) generates [codepage_tables.js](codepage_tables.js) from a set of codepage mapping files defined in [source_urls.json](source_urls.json).
 
-Usage:
+### Usage
 
     $ python import_cp.py -h
     usage: import_cp [-h] [-i FILE] [-o FILE]
