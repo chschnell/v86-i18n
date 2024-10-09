@@ -36,12 +36,10 @@ for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codep
     // ...
 }
 
-// instantiate Codepage object for cp_id "cp858" (ISO 8859-1)
-const codepage = new Codepage("cp858");
-
-// use codepage in V86
 const emulator = new V86({ ... });
-emulator.v86.cpu.devices.vga.screen.set_charmap(codepage.charmap);
+
+// use codepage with cp_id "cp858" (ISO 8859-1) in V86
+emulator.v86.cpu.devices.vga.screen.set_charmap(Codepage.get_charmap("cp858"));
 
 </script>
 ```

@@ -15,15 +15,19 @@ export class Codepage
         return result;
     }
 
-    constructor(cp_id)
+    static get_charmap(cp_id)
     {
         if(!CODEPAGE_TABLES.hasOwnProperty(cp_id))
         {
             throw new Error(`unknown codepage id ${cp_id}`);
         }
-        this.cp_id = cp_id;
-        this.charmap = cp_id === 'cp437' ?
-            CODEPAGE_TABLES.cp437.charmap :
-            CODEPAGE_TABLES.cp437.charmap.slice(0, 128) + CODEPAGE_TABLES[cp_id].charmap;
+        else if(cp_id === 'cp437')
+        {
+            return CODEPAGE_TABLES.cp437.charmap;
+        }
+        else
+        {
+            return CODEPAGE_TABLES.cp437.charmap.slice(0, 128) + CODEPAGE_TABLES[cp_id].charmap;
+        }
     }
 }
