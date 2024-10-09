@@ -42,7 +42,7 @@ for(const [kbd_id, kbd_description] of Object.entries(Keyboard.get_available_key
     // ...
 }
 
-// instantiate Keyboard object for kbd_id "kbdgr" (German Keyboard Layout)
+// use keyboard with kbd_id "kbdgr" (German Keyboard Layout)
 const keyboard = new Keyboard("kbdgr");
 
 const emulator = new V86({ ... });
