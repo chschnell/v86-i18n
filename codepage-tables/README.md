@@ -27,7 +27,7 @@ Example usage:
 ```HTML
 <script type="module">
 // import module codepage_lib.js (it imports codepage_tables.js)
-import { Codepage } from './codepage_lib.js';
+import { Codepage } from "./codepage_lib.js";
 
 // retrieve available codepage mappings
 for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codepages()))
@@ -35,8 +35,8 @@ for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codep
     // ...
 }
 
-// instantiate Codepage object for us-EN codepage `cp437`
-const codepage = new Codepage('cp437');
+// instantiate Codepage object for cp_id "cp437" (DOS Latin US)
+const codepage = new Codepage("cp437");
 
 // use codepage in V86
 const emulator = new V86({ ... });

@@ -33,7 +33,7 @@ Example usage:
 ```HTML
 <script type="module">
 // import module keyboard_lib.js (it imports keyboard_tables.js)
-import { VirtualKeyboard } from './keyboard_lib.js';
+import { VirtualKeyboard } from "./keyboard_lib.js";
 
 // retrieve available keyboards
 for(const [kbd_id, kbd_description] of Object.entries(VirtualKeyboard.get_available_keyboards()))
@@ -41,8 +41,8 @@ for(const [kbd_id, kbd_description] of Object.entries(VirtualKeyboard.get_availa
     // ...
 }
 
-// create a german keyboard
-const keyboard = new VirtualKeyboard('kbdgr');
+// instantiate VirtualKeyboard object for kbd_id "kbdgr" (German Keyboard Layout)
+const keyboard = new VirtualKeyboard("kbdgr");
 
 const emulator = new V86({ ... });
 
