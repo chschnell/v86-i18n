@@ -1,6 +1,6 @@
 #!/bin/python
 
-import os, sys, argparse, json, re, urllib.request
+import os, sys, argparse, json, urllib.request, re, textwrap
 
 SCANCODE_TAB = 0x000F
 SCANCODE_ENTER = 0x001C
@@ -192,16 +192,18 @@ def main():
         print(' */\n', file=f_out)
         print('export const KEYBOARD_TABLES =\n{', file=f_out)
         for i_keyboard, keyboard in enumerate(keyboards):
-            if i_keyboard > 0:
-                print(',\n', file=f_out)
-            print(f'    {keyboard["kbd_id"]}: {{'
+            line = (f'{keyboard["kbd_id"]}: {{'
                 f'description: {json.dumps(keyboard["description"])}, '
                 f'locale: {json.dumps(keyboard["locale"])}, '
                 f'has_altgr: {json.dumps(keyboard["has_altgr"])}, '
-                f'charset: {json.dumps(keyboard["charset"])}', file=f_out, end='')
+                f'charset: {json.dumps(keyboard["charset"])}')
             if 'charset_missing' in keyboard:
-                print(f', charset_missing: {json.dumps(keyboard["charset_missing"])}', file=f_out, end='')
-            print('}', file=f_out, end='')
+                line += f', charset_missing: {json.dumps(keyboard["charset_missing"])}'
+            line += '}'
+            if i_keyboard > 0:
+                print(',\n', file=f_out)
+            print(textwrap.fill(line, break_on_hyphens=False, initial_indent=' '*4,
+                subsequent_indent=' '*8), file=f_out, end='')
         print('\n};', file=f_out)
 
 if __name__ == '__main__':
