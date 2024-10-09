@@ -2,9 +2,15 @@
 
 Converts keyboard layout data from KLC files into JavaScript code that can be imported as a module.
 
-A KLC file is the Unicode-encoded output of Microsoft's Keyboard Layout Creator (MSKLC).
+## Generating keyboard_tables.js
 
-When first started, `import_kbd.py` downloads a set of KLC files defined in `source_urls.json` into subdirectory `./download`.
+Python script [import_kbd.py](import_kbd.py) generates [keyboard_tables.js](keyboard_tables.js) from a set of keyboard layout files (.KLC) defined in [source_urls.json](source_urls.json).
+
+A .KLC file is the Unicode-encoded output of Microsoft's Keyboard Layout Creator (MSKLC).
+
+## Using keyboard_tables.js
+
+See class `VirtualKeyboard` in [keyboard_lib.js](keyboard_lib.js) for usage examples.
 
 ## SEE ALSO
 
