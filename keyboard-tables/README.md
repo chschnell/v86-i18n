@@ -26,23 +26,23 @@ Python script **[import_kbd.py](import_kbd.py)** generates [keyboard_tables.js](
 
 ## Using keyboard_tables.js
 
-Copy Javascript modules **[keyboard_tables.js](keyboard_tables.js)** and **[keyboard_lib.js](keyboard_lib.js)** into your project, then use class `VirtualKeyboard` from module [keyboard_lib.js](keyboard_lib.js) to access the keyboard mappings.
+Copy Javascript modules **[keyboard_tables.js](keyboard_tables.js)** and **[keyboard_lib.js](keyboard_lib.js)** into your project, then use class `Keyboard` from module [keyboard_lib.js](keyboard_lib.js) to access the keyboard mappings.
 
 Example usage:
 
 ```HTML
 <script type="module">
-// import module keyboard_lib.js (it imports keyboard_tables.js)
-import { VirtualKeyboard } from "./keyboard_lib.js";
+// import class Keyboard from module keyboard_lib.js (which imports keyboard_tables.js)
+import { Keyboard } from "./keyboard_lib.js";
 
 // retrieve available keyboards
-for(const [kbd_id, kbd_description] of Object.entries(VirtualKeyboard.get_available_keyboards()))
+for(const [kbd_id, kbd_description] of Object.entries(Keyboard.get_available_keyboards()))
 {
     // ...
 }
 
-// instantiate VirtualKeyboard object for kbd_id "kbdgr" (German Keyboard Layout)
-const keyboard = new VirtualKeyboard("kbdgr");
+// instantiate Keyboard object for kbd_id "kbdgr" (German Keyboard Layout)
+const keyboard = new Keyboard("kbdgr");
 
 const emulator = new V86({ ... });
 
@@ -53,7 +53,7 @@ async paste_from_clipboard()
     if(text.length)
     {
         const scancodes = keyboard.text_to_scancodes(text);
-        await VirtualKeyboard.paste_scancodes(emulator, scancodes);
+        await Keyboard.paste_scancodes(emulator, scancodes);
     }
 }
 
@@ -61,8 +61,8 @@ async paste_from_clipboard()
 async paste_ctrl_alt_del()
 {
     // use key names from KeyboardEvent.code to identify non-printable keys
-    const scancodes = VirtualKeyboard.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
-    await VirtualKeyboard.paste_scancodes(emulator, scancodes);
+    const scancodes = Keyboard.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
+    await Keyboard.paste_scancodes(emulator, scancodes);
 }
 </script>
 ```

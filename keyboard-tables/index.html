@@ -105,7 +105,7 @@ div.transform {
 </div>
 
 <script type="module">
-import { VirtualKeyboard } from './keyboard_lib.js';
+import { Keyboard } from './keyboard_lib.js';
 
 function hex(value, word_size=0)
 {
@@ -123,19 +123,19 @@ function format_modifier(modifier)
     const add_modifier = function(modifier_bit, scancode, text) {
         if (modifier & modifier_bit) {
             result.push(`<span class="modkey" ` +
-                `title='Scancode: 0x${hex(scancode)}\nEvent code: "${VirtualKeyboard.SCANCODE_TO_EVCODE[scancode]}"'>${text}</span>`);
+                `title='Scancode: 0x${hex(scancode)}\nEvent code: "${Keyboard.SCANCODE_TO_EVCODE[scancode]}"'>${text}</span>`);
         }
     };
-    add_modifier(VirtualKeyboard.MODIFIER_SHIFT, VirtualKeyboard.SCANCODE_SHIFT, 'Shift');
-    add_modifier(VirtualKeyboard.MODIFIER_CTRL, VirtualKeyboard.SCANCODE_CTRL, 'Ctrl');
-    add_modifier(VirtualKeyboard.MODIFIER_ALT, VirtualKeyboard.SCANCODE_ALT, 'Alt');
-    add_modifier(VirtualKeyboard.MODIFIER_ALTGR, VirtualKeyboard.SCANCODE_ALTGR, 'AltGr');
+    add_modifier(Keyboard.MODIFIER_SHIFT, Keyboard.SCANCODE_SHIFT, 'Shift');
+    add_modifier(Keyboard.MODIFIER_CTRL, Keyboard.SCANCODE_CTRL, 'Ctrl');
+    add_modifier(Keyboard.MODIFIER_ALT, Keyboard.SCANCODE_ALT, 'Alt');
+    add_modifier(Keyboard.MODIFIER_ALTGR, Keyboard.SCANCODE_ALTGR, 'AltGr');
     return result;
 }
 
 function set_keyboard(kbd_id)
 {
-    const keyboard = new VirtualKeyboard(kbd_id);
+    const keyboard = new Keyboard(kbd_id);
 
     let html = ['<thead><tr> <th>Codepoint</th> <th>Glyph</th> <th>Scancode(s)</th> </tr></thead>'];
     html.push('<tbody>');
@@ -148,7 +148,7 @@ function set_keyboard(kbd_id)
             if (modifier !== 0) {
                 keys += format_modifier(modifier).join('+') + '+';
             }
-            keys += `<span class="key" title='Event code: "${VirtualKeyboard.SCANCODE_TO_EVCODE[scancode]}"'>0x${hex(scancode, 1)}</span> `;
+            keys += `<span class="key" title='Event code: "${Keyboard.SCANCODE_TO_EVCODE[scancode]}"'>0x${hex(scancode, 1)}</span> `;
         }
         html.push(`<tr> <td>U+${hex(codepoint, 2)}</td> <td>${String.fromCodePoint(codepoint)}</td> <td>${keys}</td> </tr>`);
     }
@@ -207,7 +207,7 @@ function on_enter_evcode_sequence(ev)
     if(ev_codes_str)
     {
         const ev_codes = ev_codes_str.split(' ')
-        set_scancodes_text(VirtualKeyboard.ev_codes_to_scancodes(ev_codes))
+        set_scancodes_text(Keyboard.ev_codes_to_scancodes(ev_codes))
     }
 }
 
@@ -221,7 +221,7 @@ function on_window_load(ev)
 {
     const url_params = new URLSearchParams(window.location.search);
     const initial_keyboard_id = url_params.get('k');
-    const keyboard_ids = VirtualKeyboard.get_available_keyboards();
+    const keyboard_ids = Keyboard.get_available_keyboards();
     let keyboard_id, keyboard_index;
     if (initial_keyboard_id !== null && keyboard_ids.hasOwnProperty(initial_keyboard_id)) {
         keyboard_id = initial_keyboard_id;

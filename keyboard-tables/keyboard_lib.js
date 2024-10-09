@@ -11,24 +11,11 @@
  * Provides a robust method for scancode injection into V86.
  *
  * Supports US and international keyboards.
- *
- * EXAMPLES
- *
- * A) Inject keystrokes Ctrl+Alt+Del into a running V86 instance "emulator"
- *
- *    const scancodes = VirtualKeyboard.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
- *    VirtualKeyboard.paste_scancodes(emulator, scancodes);
- *
- * B) Inject keystrokes for "Hello, world!" into a running V86 instance "emulator" using a US-keyboard
- *
- *    const keyboard = new VirtualKeyboard("kbdus");
- *    const scancodes = keyboard.text_to_scancodes("Hello, world!");
- *    VirtualKeyboard.paste_scancodes(emulator, scancodes);
  */
 
 import { KEYBOARD_TABLES } from './keyboard_tables.js';
 
-export class VirtualKeyboard
+export class Keyboard
 {
     // KeyboardEvent.code: string => scancode: uint16 mapping
     static EVCODE_TO_SCANCODE =
@@ -189,15 +176,15 @@ export class VirtualKeyboard
                 }
                 else
                 {
-                    result.push(modifier_scancode | VirtualKeyboard.SCANCODE_RELEASE_BIT);
+                    result.push(modifier_scancode | Keyboard.SCANCODE_RELEASE_BIT);
                 }
             }
         };
 
-        switch_modifier(VirtualKeyboard.MODIFIER_SHIFT, VirtualKeyboard.SCANCODE_SHIFT);
-        switch_modifier(VirtualKeyboard.MODIFIER_CTRL, VirtualKeyboard.SCANCODE_CTRL);
-        switch_modifier(VirtualKeyboard.MODIFIER_ALT, VirtualKeyboard.SCANCODE_ALT);
-        switch_modifier(VirtualKeyboard.MODIFIER_ALTGR, VirtualKeyboard.SCANCODE_ALTGR);
+        switch_modifier(Keyboard.MODIFIER_SHIFT, Keyboard.SCANCODE_SHIFT);
+        switch_modifier(Keyboard.MODIFIER_CTRL, Keyboard.SCANCODE_CTRL);
+        switch_modifier(Keyboard.MODIFIER_ALT, Keyboard.SCANCODE_ALT);
+        switch_modifier(Keyboard.MODIFIER_ALTGR, Keyboard.SCANCODE_ALTGR);
     };
 
     //
@@ -244,17 +231,17 @@ export class VirtualKeyboard
      */
     static async paste_scancodes(emulator, scancodes)
     {
-        VirtualKeyboard.paste_queue.push(scancodes);
-        if(VirtualKeyboard.paste_queue.length > 1)
+        Keyboard.paste_queue.push(scancodes);
+        if(Keyboard.paste_queue.length > 1)
         {
             // an unfinished paste loop is already running
             return;
         }
         const bus = emulator.keyboard_adapter.bus;
-        for(; VirtualKeyboard.paste_queue.length > 0; VirtualKeyboard.paste_queue.shift())
+        for(; Keyboard.paste_queue.length > 0; Keyboard.paste_queue.shift())
         {
             let n_bytes_sent = 0;
-            for(const scancode of VirtualKeyboard.paste_queue.at(0))
+            for(const scancode of Keyboard.paste_queue.at(0))
             {
                 const n_bytes = scancode > 0xff ? 2 : 1;
                 if(n_bytes_sent + n_bytes > 15)
@@ -312,9 +299,9 @@ export class VirtualKeyboard
                 {
                     for(const key of keys)
                     {
-                        if((key[1] & VirtualKeyboard.MODIFIER_CTRL_ALT) === VirtualKeyboard.MODIFIER_CTRL_ALT)
+                        if((key[1] & Keyboard.MODIFIER_CTRL_ALT) === Keyboard.MODIFIER_CTRL_ALT)
                         {
-                            key[1] = (key[1] & ~VirtualKeyboard.MODIFIER_CTRL_ALT) | VirtualKeyboard.MODIFIER_ALTGR;
+                            key[1] = (key[1] & ~Keyboard.MODIFIER_CTRL_ALT) | Keyboard.MODIFIER_ALTGR;
                         }
                     }
                 }
@@ -340,7 +327,7 @@ export class VirtualKeyboard
     {
         const charset = this.charset;
         const result = [];
-        let modifier = VirtualKeyboard.MODIFIER_NONE;
+        let modifier = Keyboard.MODIFIER_NONE;
 
         for(const chr of text)
         {
@@ -354,7 +341,7 @@ export class VirtualKeyboard
                     this.encode_modifier(modifier, new_modifier, result);
                     modifier = new_modifier;
                     result.push(scancode);
-                    result.push(scancode | VirtualKeyboard.SCANCODE_RELEASE_BIT);
+                    result.push(scancode | Keyboard.SCANCODE_RELEASE_BIT);
                 }
             }
             else
@@ -363,7 +350,7 @@ export class VirtualKeyboard
             }
         }
 
-        this.encode_modifier(modifier, VirtualKeyboard.MODIFIER_NONE, result);
+        this.encode_modifier(modifier, Keyboard.MODIFIER_NONE, result);
         return result;
     }
 
@@ -378,7 +365,7 @@ export class VirtualKeyboard
      */
     static ev_codes_to_scancodes(ev_codes)
     {
-        const EVCODE_TO_SCANCODE = VirtualKeyboard.EVCODE_TO_SCANCODE;
+        const EVCODE_TO_SCANCODE = Keyboard.EVCODE_TO_SCANCODE;
         const result = [];
 
         for(const ev_code of ev_codes)
@@ -395,7 +382,7 @@ export class VirtualKeyboard
 
         for(const scancode of result.slice().reverse())
         {
-            result.push(scancode | VirtualKeyboard.SCANCODE_RELEASE_BIT);
+            result.push(scancode | Keyboard.SCANCODE_RELEASE_BIT);
         }
 
         return result;

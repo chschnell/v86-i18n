@@ -26,7 +26,7 @@ Example usage:
 
 ```HTML
 <script type="module">
-// import module codepage_lib.js (it imports codepage_tables.js)
+// import class Codepage from module codepage_lib.js (which imports codepage_tables.js)
 import { Codepage } from "./codepage_lib.js";
 
 // retrieve available codepage mappings
