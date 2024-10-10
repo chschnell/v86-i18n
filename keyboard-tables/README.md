@@ -26,24 +26,21 @@ Python script **[import_kbd.py](import_kbd.py)** generates [keyboard_tables.js](
 
 ## Using keyboard_tables.js
 
-Copy Javascript modules **[keyboard_tables.js](keyboard_tables.js)** and **[keyboard_lib.js](keyboard_lib.js)** into your project, then use class `Keyboard` from module [keyboard_lib.js](keyboard_lib.js) to access the keyboard mappings.
+Copy Javascript modules **[keyboard_tables.js](keyboard_tables.js)** and **[keyboard_lib.js](keyboard_lib.js)** into your project, then use module [keyboard_lib.js](keyboard_lib.js) to access the keyboard mappings.
 
 Example usage:
 
 ```HTML
 <script type="module">
 
-// import class Keyboard from module keyboard_lib.js (which imports keyboard_tables.js)
-import { Keyboard } from "./keyboard_lib.js";
+// import functions from module keyboard_lib.js (which imports keyboard_tables.js)
+import * as kbd from './keyboard_lib.js';
 
 // retrieve available keyboards
-for(const [kbd_id, kbd_description] of Object.entries(Keyboard.get_available_keyboards()))
+for(const [kbd_id, kbd_description] of Object.entries(kbd.get_available_keyboards()))
 {
     // ...
 }
-
-// use keyboard with kbd_id "kbdgr" (German Keyboard Layout)
-const keyboard = new Keyboard("kbdgr");
 
 const emulator = new V86({ ... });
 
@@ -53,8 +50,9 @@ async paste_from_clipboard()
     const text = await navigator.clipboard.readText();
     if(text.length)
     {
-        const scancodes = keyboard.text_to_scancodes(text);
-        await Keyboard.paste_scancodes(emulator, scancodes);
+        // use keyboard with kbd_id "kbdgr" (German Keyboard Layout)
+        const scancodes = kbd.text_to_scancodes(kbd.get_keyboard("kbdgr"), text);
+        await kbd.paste_scancodes(emulator, scancodes);
     }
 }
 
@@ -62,8 +60,8 @@ async paste_from_clipboard()
 async paste_ctrl_alt_del()
 {
     // use key names from KeyboardEvent.code to identify non-printable keys
-    const scancodes = Keyboard.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
-    await Keyboard.paste_scancodes(emulator, scancodes);
+    const scancodes = kbd.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
+    await kbd.paste_scancodes(emulator, scancodes);
 }
 
 </script>
