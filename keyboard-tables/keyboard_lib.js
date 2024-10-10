@@ -321,46 +321,52 @@ export function ev_codes_to_scancodes(ev_codes)
  * Sending only half of a 16-bit scancode could be interpreted on
  * the receiving end as an error and cause the byte to be discarded.
  *
- * This static method does not block. Overlapping calls to this method
+ * This function does not block. Overlapping calls to this function
  * throw an error.
  */
-let paste_active = false;
 
-export async function paste_scancodes(emulator, scancodes)
+const BURST_INTERVAL_MS = 100;
+const MAX_BURST_SIZE = 15;
+let paste_timeout_id = 0;
+
+export function paste_scancodes(emulator, scancodes)
 {
-    if(paste_active)
+    if(paste_timeout_id)
     {
-        throw new Error(`another call to past_scancodes() is currently running, aborted`);
+        throw new Error(`another call to past_scancodes() is actively running, aborted`);
     }
-    paste_active = true;
 
     const bus = emulator.keyboard_adapter.bus;
-    let n_bytes_sent = 0;
-    for(const scancode of scancodes)
+    let i_scancode = 0;
+    function paste_loop()
     {
-        const n_bytes = scancode > 0xff ? 2 : 1;
-        if(n_bytes_sent + n_bytes > 15)
+        let n_bytes_sent = 0;
+        while(i_scancode < scancodes.length)
         {
-            await new Promise(resolve => { setTimeout(resolve, 100) });
-            n_bytes_sent = 0;
+            const scancode = scancodes[i_scancode];
+            const n_bytes = scancode > 0xff ? 2 : 1;
+            if(n_bytes_sent + n_bytes > MAX_BURST_SIZE)
+            {
+                paste_timeout_id = setTimeout(paste_loop, BURST_INTERVAL_MS);
+                return;
+            }
+
+            if(n_bytes === 2)
+            {
+                bus.send('keyboard-code', scancode >> 8);
+                bus.send('keyboard-code', scancode & 0xff);
+            }
+            else
+            {
+                bus.send('keyboard-code', scancode);
+            }
+            ++i_scancode;
+            n_bytes_sent += n_bytes;
         }
 
-        if(n_bytes === 2)
-        {
-            bus.send('keyboard-code', scancode >> 8);
-            bus.send('keyboard-code', scancode & 0xff);
-        }
-        else
-        {
-            bus.send('keyboard-code', scancode);
-        }
-        n_bytes_sent += n_bytes;
+        // done sending scancodes[] to emulator
+        paste_timeout_id = 0;
     }
 
-    if(n_bytes_sent)
-    {
-        await new Promise(resolve => { setTimeout(resolve, 100) });
-    }
-
-    paste_active = false;
+    paste_loop();
 }
