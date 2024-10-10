@@ -240,7 +240,7 @@ export function get_keyboard(kbd_id)
 }
 
 /*
- * text_to_scancodes(keyboard: Keyboard, text: str) -> array(scancode: uint16, ...)
+ * text_to_scancodes(keyboard: str|Keyboard, text: str) -> array(scancode: uint16, ...)
  *
  * Transcode unicode text to sequence of keyboard-specific scancodes.
  *
@@ -248,6 +248,10 @@ export function get_keyboard(kbd_id)
  */
 export function text_to_scancodes(keyboard, text)
 {
+    if(typeof keyboard === 'string')
+    {
+        keyboard = get_keyboard(keyboard);
+    }
     const charset = keyboard.charset;
     const result = [];
     let modifier = MODIFIER_NONE;
@@ -268,7 +272,7 @@ export function text_to_scancodes(keyboard, text)
         }
         else
         {
-            console.warn(`keyboard "${keyboard.id}" does not support codepoint ${codepoint} "${chr}"`);
+            console.warn(`keyboard "${keyboard.kbd_id}" does not support codepoint ${codepoint} "${chr}"`);
         }
     }
 

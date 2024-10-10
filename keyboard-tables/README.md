@@ -51,7 +51,7 @@ async paste_from_clipboard()
     if(text.length)
     {
         // use keyboard with kbd_id "kbdgr" (German Keyboard Layout)
-        const scancodes = kbd.text_to_scancodes(kbd.get_keyboard("kbdgr"), text);
+        const scancodes = kbd.text_to_scancodes("kbdgr", text);
         await kbd.paste_scancodes(emulator, scancodes);
     }
 }
