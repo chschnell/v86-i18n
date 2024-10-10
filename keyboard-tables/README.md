@@ -44,25 +44,19 @@ for(const [kbd_id, kbd_description] of Object.entries(kbd.get_available_keyboard
 
 const emulator = new V86({ ... });
 
-// async function that pastes current clipboard content into V86
-async paste_from_clipboard()
-{
-    const text = await navigator.clipboard.readText();
-    if(text.length)
-    {
+// paste current clipboard content into V86
+navigator.clipboard.readText().then((text) => {
+    if(text.length) {
         // use keyboard with kbd_id "kbdgr" (German Keyboard Layout)
         const scancodes = kbd.text_to_scancodes("kbdgr", text);
-        await kbd.paste_scancodes(emulator, scancodes);
+        kbd.paste_scancodes(emulator, scancodes);
     }
-}
+});
 
-// async function that pastes Ctrl+Alt+Del into V86 (non-printable keys, identical across all keyboard layouts)
-async paste_ctrl_alt_del()
-{
-    // use key names from KeyboardEvent.code to identify non-printable keys
-    const scancodes = kbd.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
-    await kbd.paste_scancodes(emulator, scancodes);
-}
+// paste Ctrl+Alt+Del into V86 (non-printable keys, identical across all keyboard layouts)
+// use key names from KeyboardEvent.code to identify non-printable keys
+const scancodes = kbd.ev_codes_to_scancodes(["ControlLeft", "AltLeft", "Delete"]);
+kbd.paste_scancodes(emulator, scancodes);
 
 </script>
 ```
