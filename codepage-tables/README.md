@@ -20,18 +20,18 @@ Python script **[import_cp.py](import_cp.py)** generates [codepage_tables.js](co
 
 ## Using codepage_tables.js
 
-Copy Javascript modules **[codepage_tables.js](codepage_tables.js)** and **[codepage_lib.js](codepage_lib.js)** into your project, then use class `Codepage` from module [codepage_lib.js](codepage_lib.js) to access the codepage mappings.
+Copy Javascript modules **[codepage_tables.js](codepage_tables.js)** and **[codepage_lib.js](codepage_lib.js)** into your project, then use module [codepage_lib.js](codepage_lib.js) to access the codepage mappings.
 
 Example usage:
 
 ```HTML
 <script type="module">
 
-// import class Codepage from module codepage_lib.js (which imports codepage_tables.js)
-import { Codepage } from "./codepage_lib.js";
+// import functions and consts from module codepage_lib.js (which imports codepage_tables.js)
+import * as cp from "./codepage_lib.js";
 
 // retrieve available codepage mappings
-for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codepages()))
+for(const [cp_id, cp_description] of Object.entries(cp.get_available_codepages()))
 {
     // ...
 }
@@ -39,7 +39,7 @@ for(const [cp_id, cp_description] of Object.entries(Codepage.get_available_codep
 const emulator = new V86({ ... });
 
 // use codepage with cp_id "cp858" (ISO 8859-1) in V86
-emulator.v86.cpu.devices.vga.screen.set_charmap(Codepage.get_charmap("cp858"));
+emulator.v86.cpu.devices.vga.screen.set_charmap(cp.get_charmap("cp858"));
 
 </script>
 ```
