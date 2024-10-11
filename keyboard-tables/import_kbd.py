@@ -2,8 +2,6 @@
 
 import os, sys, argparse, json, urllib.request, re, textwrap
 
-SCANCODE_TAB = 0x000F
-SCANCODE_ENTER = 0x001C
 SCANCODES_NUMPAD = [
     0x45, 0xE035, 0x37, 0x4A,   ## NumLock, NumpadDivide, NumpadMultiply, NumpadSubtract
     0x47, 0x48,   0x49,         ## Numpad7, Numpad8, Numpad9
