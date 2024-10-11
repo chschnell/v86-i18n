@@ -16,16 +16,6 @@ MODIFIER_SHIFT = 0x01
 MODIFIER_CTRL  = 0x02
 MODIFIER_ALT   = 0x04
 
-KLC_MODIFIER = {
-    '0': MODIFIER_NONE,
-    '1': MODIFIER_SHIFT,
-    '2': MODIFIER_CTRL,
-    '3': MODIFIER_SHIFT | MODIFIER_CTRL,
-    '4': MODIFIER_ALT,
-    '5': MODIFIER_SHIFT | MODIFIER_ALT,
-    '6': MODIFIER_CTRL | MODIFIER_ALT,
-    '7': MODIFIER_SHIFT | MODIFIER_CTRL | MODIFIER_ALT }
-
 def parse_klc(kbd_id, klc_filename):
     re_trim_end = re.compile('[\t ]*(?://.*)?[\r\n]+$')
     re_split_fields = re.compile('\t+')
@@ -81,10 +71,10 @@ def parse_klc(kbd_id, klc_filename):
                     else:
                         print(f'{klc_filename}:{i_line}: unknown KLC ATTRIBUTE "{fields[0]}" ignored', file=sys.stderr)
                 elif section == 'SHIFTSTATE':
-                    shiftstate_str = fields[0]
-                    if shiftstate_str not in KLC_MODIFIER:
-                        raise Exception(f'{klc_filename}:{i_line}: unknown KLC SHIFTSTATE {shiftstate_str}')
-                    key_modifier.append(KLC_MODIFIER[shiftstate_str])
+                    shiftstate = int(fields[0], 16)
+                    if shiftstate > 7:
+                        raise Exception(f'{klc_filename}:{i_line}: unknown KLC SHIFTSTATE {fields[0]}')
+                    key_modifier.append(shiftstate)
                 elif section == 'LAYOUT':
                     if fields[0] == '-1':
                         continue
