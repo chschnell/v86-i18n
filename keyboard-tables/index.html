@@ -140,7 +140,7 @@ function set_keyboard(kbd_id)
     let html = ['<thead><tr> <th>Codepoint</th> <th>Glyph</th> <th>Scancode(s)</th> </tr></thead>'];
     html.push('<tbody>');
 
-    for(const codepoint_str of Object.keys(keyboard.charset).sort())
+    for(const codepoint_str of Object.keys(keyboard.charset).sort((lhs, rhs) => { return lhs.codePointAt(0) - rhs.codePointAt(0) }))
     {
         const keylist = keyboard.charset[codepoint_str];
         const codepoint = codepoint_str.codePointAt(0);
@@ -160,12 +160,6 @@ function set_keyboard(kbd_id)
 
     const charset_size = Object.keys(keyboard.charset).length;
     const kbdlayout_url = 'https://kbdlayout.info/' + kbd_id;
-/*
-    document.querySelector('#keyboard-attr').innerHTML =
-        `Charset size: <b>${charset_size} distinct codepoints</b> | ` +
-        `Locale: <b>${keyboard.locale}</b> | <b><a href="${kbdlayout_url}/overview+scancodes">Layout</a></b> | ` +
-        `<b><a href="${kbdlayout_url}/download/klc">${kbd_id}.klc</a></b>`;
-*/
     document.querySelector('#keyboard-attr').innerHTML =
         'Charset size: <b>' + charset_size + ' distinct codepoints</b> | ' +
         'Locale: <b>' + keyboard.locale + '</b> | <b><a href="' + kbdlayout_url + '/overview+scancodes">Layout</a></b> | ' +
@@ -184,7 +178,7 @@ function on_fill_keyboard_charset(ev)
 {
     const charset = document.keyboard.charset;
     let text = '', i_codepoint = 1;
-    for(const codepoint_str of Object.keys(charset).sort())
+    for(const codepoint_str of Object.keys(charset).sort((lhs, rhs) => { return lhs.codePointAt(0) - rhs.codePointAt(0) }))
     {
         const codepoint = codepoint_str.codePointAt(0);
         if(codepoint >= 0x20)
