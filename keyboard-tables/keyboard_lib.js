@@ -233,10 +233,9 @@ export function get_keyboard(kbd_id)
             }
         }
 
-        // Add universal non-visible keys and their scancodes
+        // Add scancodes of universal non-visible characters below 0x20
         keyboard.charset['\t'] = [[EVCODE_TO_SCANCODE.Tab, MODIFIER_NONE]]
         keyboard.charset['\n'] = [[EVCODE_TO_SCANCODE.Enter, MODIFIER_NONE]]
-        keyboard.charset[' ']  = [[EVCODE_TO_SCANCODE.Space, MODIFIER_NONE]]
 
         keyboard.kbd_id = kbd_id;
         keyboard.keyboard_initialized = true;
