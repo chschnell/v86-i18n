@@ -188,6 +188,11 @@ export function get_available_keyboards()
     return result;
 }
 
+/*
+ * get_keyboard(kbd_id: str) -> Object
+ *
+ * Return keyboard object of given kbd_id.
+ */
 export function get_keyboard(kbd_id)
 {
     if(!KEYBOARD_TABLES.hasOwnProperty(kbd_id))
