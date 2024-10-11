@@ -379,3 +379,12 @@ export function paste_scancodes(emulator, scancodes)
 
     paste_loop();
 }
+
+export function cancel_paste_scancodes()
+{
+    if(paste_timeout_id !== 0)
+    {
+        clearTimeout(paste_timeout_id);
+        paste_timeout_id = 0;
+    }
+}
