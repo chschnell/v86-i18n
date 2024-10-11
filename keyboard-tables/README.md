@@ -66,6 +66,5 @@ kbd.paste_scancodes(emulator, scancodes);
 - [KeyboardEvent code Values: Standard "102" Keyboard Layout](https://www.w3.org/TR/uievents-code/#keyboard-102)
 - [German layout scancodes](https://kbdlayout.info/KBDGR/scancodes)
 - [German KLC file](https://kbdlayout.info/kbdgr/download/klc)
-- [Encoding API Encodings](https://developer.mozilla.org/en-US/docs/Web/API/Encoding_API/Encodings)
 - [Computer-Engineering.org (Adam Chapweske)](https://web.archive.org/web/20180302004814/https://computer-engineering.org/)
 - [Italian keyboard](https://en.wikipedia.org/wiki/List_of_QWERTY_keyboard_language_variants#Italian) (Wikipedia, note the remark on ASCII characters tilde `~` and backquote `` ` ``)
