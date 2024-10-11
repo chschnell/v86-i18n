@@ -122,8 +122,8 @@ function format_modifier(modifier)
     const result = [];
     const add_modifier = function(modifier_bit, scancode, text) {
         if (modifier & modifier_bit) {
-            result.push(`<span class="modkey" ` +
-                `title='Scancode: 0x${hex(scancode)}\nEvent code: "${kbd.SCANCODE_TO_EVCODE[scancode]}"'>${text}</span>`);
+            result.push('<span class="modkey" ' +
+                'title=\'Scancode: 0x' + hex(scancode) + '\nEvent code: "' + kbd.SCANCODE_TO_EVCODE[scancode] + '"\'>' + text + '</span>');
         }
     };
     add_modifier(kbd.MODIFIER_SHIFT, kbd.SCANCODE_SHIFT, 'Shift');
@@ -139,7 +139,10 @@ function set_keyboard(kbd_id)
 
     let html = ['<thead><tr> <th>Codepoint</th> <th>Glyph</th> <th>Scancode(s)</th> </tr></thead>'];
     html.push('<tbody>');
-    for (const [codepoint_str, keylist] of Object.entries(keyboard.charset)) {
+
+    for(const codepoint_str of Object.keys(keyboard.charset).sort())
+    {
+        const keylist = keyboard.charset[codepoint_str];
         const codepoint = codepoint_str.codePointAt(0);
         let keys = '';
         for (const key of keylist) {
@@ -148,19 +151,25 @@ function set_keyboard(kbd_id)
             if (modifier !== 0) {
                 keys += format_modifier(modifier).join('+') + '+';
             }
-            keys += `<span class="key" title='Event code: "${kbd.SCANCODE_TO_EVCODE[scancode]}"'>0x${hex(scancode, 1)}</span> `;
+            keys += '<span class="key" title=\'Event code: "' + kbd.SCANCODE_TO_EVCODE[scancode] + '"\'>0x' + hex(scancode, 1) + '</span> ';
         }
-        html.push(`<tr> <td>U+${hex(codepoint, 2)}</td> <td>${codepoint_str}</td> <td>${keys}</td> </tr>`);
+        html.push('<tr> <td>U+' + hex(codepoint, 2) + '</td> <td>' + codepoint_str + '</td> <td>' + keys + '</td> </tr>');
     }
     html.push('</tbody>');
     document.querySelector('#keyboard-charset').innerHTML = html.join('\n');
 
     const charset_size = Object.keys(keyboard.charset).length;
-    const kbdlayout_url = `https://kbdlayout.info/${kbd_id}`;
+    const kbdlayout_url = 'https://kbdlayout.info/' + kbd_id;
+/*
     document.querySelector('#keyboard-attr').innerHTML =
         `Charset size: <b>${charset_size} distinct codepoints</b> | ` +
         `Locale: <b>${keyboard.locale}</b> | <b><a href="${kbdlayout_url}/overview+scancodes">Layout</a></b> | ` +
         `<b><a href="${kbdlayout_url}/download/klc">${kbd_id}.klc</a></b>`;
+*/
+    document.querySelector('#keyboard-attr').innerHTML =
+        'Charset size: <b>' + charset_size + ' distinct codepoints</b> | ' +
+        'Locale: <b>' + keyboard.locale + '</b> | <b><a href="' + kbdlayout_url + '/overview+scancodes">Layout</a></b> | ' +
+        '<b><a href="' + kbdlayout_url + '/download/klc">' + kbd_id + '.klc</a></b>';
 
     document.keyboard = keyboard;
 }
@@ -202,7 +211,7 @@ function set_scancodes_text(scancodes)
     }
     document.querySelector('#scancode-output').value = hex_scancodes.join(' ');
     const copy_scancodes = document.querySelector('#copy-scancodes');
-    copy_scancodes.textContent = `Copy ${n_bytes} scancode bytes to clipboard`;
+    copy_scancodes.textContent = 'Copy ' + n_bytes + ' scancode bytes to clipboard';
     copy_scancodes.disabled = n_bytes === 0;
 }
 
@@ -241,7 +250,7 @@ function on_window_load(ev)
     const select_keyboard = document.querySelector('#select-keyboard');
     const options = [];
     for (const [keyboard_id, keyboard_description] of Object.entries(keyboard_ids)) {
-        options.push(`<option value="${keyboard_id}">${keyboard_description}</option>`);
+        options.push('<option value="' + keyboard_id + '">' + keyboard_description + '</option>');
     }
     select_keyboard.innerHTML = options.join('\n');
     select_keyboard.selectedIndex = keyboard_index;
