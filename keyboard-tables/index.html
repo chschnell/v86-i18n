@@ -140,7 +140,7 @@ function set_keyboard(kbd_id)
     let html = ['<thead><tr> <th>Codepoint</th> <th>Glyph</th> <th>Scancode(s)</th> </tr></thead>'];
     html.push('<tbody>');
     for (const [codepoint_str, keylist] of Object.entries(keyboard.charset)) {
-        const codepoint = parseInt(codepoint_str);
+        const codepoint = codepoint_str.codePointAt(0);
         let keys = '';
         for (const key of keylist) {
             const scancode = key[0];
@@ -150,7 +150,7 @@ function set_keyboard(kbd_id)
             }
             keys += `<span class="key" title='Event code: "${kbd.SCANCODE_TO_EVCODE[scancode]}"'>0x${hex(scancode, 1)}</span> `;
         }
-        html.push(`<tr> <td>U+${hex(codepoint, 2)}</td> <td>${String.fromCodePoint(codepoint)}</td> <td>${keys}</td> </tr>`);
+        html.push(`<tr> <td>U+${hex(codepoint, 2)}</td> <td>${codepoint_str}</td> <td>${keys}</td> </tr>`);
     }
     html.push('</tbody>');
     document.querySelector('#keyboard-charset').innerHTML = html.join('\n');
@@ -173,10 +173,15 @@ function on_keyboard_change(ev)
 
 function on_fill_keyboard_charset(ev)
 {
+    const charset = document.keyboard.charset;
     let text = '', i_codepoint = 1;
-    for (const [codepoint_str, keylist] of Object.entries(document.keyboard.charset)) {
-        const codepoint = Math.max(parseInt(codepoint_str), 0x20);
-        text += String.fromCodePoint(codepoint) + ((i_codepoint++ % 16 === 0) ? '\n' : ' ');
+    for(const codepoint_str of Object.keys(charset).sort())
+    {
+        const codepoint = codepoint_str.codePointAt(0);
+        if(codepoint >= 0x20)
+        {
+            text += codepoint_str + ((i_codepoint++ % 16 === 0) ? '\n' : ' ');
+        }
     }
     document.querySelector('#unicode-input').value = text + '\n';
     on_transform_text(ev);

@@ -29,9 +29,6 @@ def parse_klc(kbd_id, klc_filename):
     section_started = False
     section_dead_key = None
 
-    charset[ord('\t')] = [[SCANCODE_TAB, MODIFIER_NONE]]
-    charset[ord('\n')] = [[SCANCODE_ENTER, MODIFIER_NONE]]
-
     with open(klc_filename, 'r', encoding='utf-16') as f_in:
         for i_line, line in enumerate(f_in, start=1):
             line = re_trim_end.sub('', line)
@@ -182,11 +179,15 @@ def main():
         print(' */\n', file=f_out)
         print('export const KEYBOARD_TABLES =\n{', file=f_out)
         for i_keyboard, keyboard in enumerate(keyboards):
+            charset_json = []
+            for codepoint, scancodes in keyboard["charset"].items():
+                charset_json.append(f'{json.dumps(chr(codepoint), ensure_ascii=False)}: {scancodes}')
+            charset_json = '{' + ', '.join(charset_json) + '}'
             line = (f'{keyboard["kbd_id"]}: {{'
                 f'description: {json.dumps(keyboard["description"])}, '
                 f'locale: {json.dumps(keyboard["locale"])}, '
                 f'has_altgr: {json.dumps(keyboard["has_altgr"])}, '
-                f'charset: {json.dumps(keyboard["charset"])}')
+                f'charset: {charset_json}')
             if 'charset_missing' in keyboard:
                 line += f', charset_missing: {json.dumps(keyboard["charset_missing"])}'
             line += '}'

@@ -209,11 +209,11 @@ export function get_keyboard(kbd_id)
             const charset_missing = keyboard.hasOwnProperty('charset_missing') ? keyboard.charset_missing : [];
             for(const [codepoint_str, us_keys] of Object.entries(KEYBOARD_TABLES['kbdus'].charset))
             {
-                const codepoint = parseInt(codepoint_str);
-                if(!charset.hasOwnProperty(codepoint) && !charset_missing.includes(codepoint))
+                const codepoint = codepoint_str.codePointAt(0);
+                if(!charset.hasOwnProperty(codepoint_str) && !charset_missing.includes(codepoint))
                 {
                     // deep copy us_keys: array(array(scancode, modifier), ...)
-                    charset[codepoint] = JSON.parse(JSON.stringify(us_keys));
+                    charset[codepoint_str] = JSON.parse(JSON.stringify(us_keys));
                 }
             }
 
@@ -232,6 +232,12 @@ export function get_keyboard(kbd_id)
                 }
             }
         }
+
+        // Add universal non-visible keys and their scancodes
+        keyboard.charset['\t'] = [[EVCODE_TO_SCANCODE.Tab, MODIFIER_NONE]]
+        keyboard.charset['\n'] = [[EVCODE_TO_SCANCODE.Enter, MODIFIER_NONE]]
+        keyboard.charset[' ']  = [[EVCODE_TO_SCANCODE.Space, MODIFIER_NONE]]
+
         keyboard.kbd_id = kbd_id;
         keyboard.keyboard_initialized = true;
     }
@@ -259,9 +265,9 @@ export function text_to_scancodes(keyboard, text)
     for(const chr of text)
     {
         const codepoint = chr.codePointAt(0);
-        if(charset.hasOwnProperty(codepoint))
+        if(charset.hasOwnProperty(chr))
         {
-            for(const key of charset[codepoint])
+            for(const key of charset[chr])
             {
                 const scancode = key[0];
                 const new_modifier = key[1];
